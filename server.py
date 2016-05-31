@@ -90,7 +90,7 @@ customCharacters = [
     [
         0b00000,
         0b01111,
-        0b11110,
+        0b11010,
         0b11100,
         0b11110,
         0b01111,
@@ -101,8 +101,8 @@ customCharacters = [
     [
         0b00000,
         0b01110,
-        0b11111,
-        0b11111,
+        0b11011,
+        0b11100,
         0b11111,
         0b01110,
         0b00000,
@@ -112,7 +112,7 @@ customCharacters = [
     [
         0b00000,
         0b01110,
-        0b11101,
+        0b10101,
         0b11111,
         0b11111,
         0b10101,
@@ -179,6 +179,22 @@ customCharacters = [
     ],
 """
 
+class pacmanAnimation(Thread):
+    def run(self):
+        pos = 0
+        prevPos = -1
+        while True:
+            if prevPos > -1:
+                sendCommand([ 'setchar', [1, prevPos, " "]])
+            sendCommand([ 'setchar', [1, pos, unichr(5+(pos%2))]])
+            sendCommand([ 'setchar', [1, pos+1, " "]])
+            sendCommand([ 'setchar', [1, pos+2, unichr(7)]])
+            prevPos = pos
+            pos = pos + 1
+            if pos > 15:
+                pos = 0
+            sleep(1)
+
 class clockAnimation(Thread):
     def run(self):
         while True:
@@ -209,20 +225,31 @@ def parseCommand(data):
     return [ command, args ]
 
 def sendCommand(cmd):
-    global device, deviceLocked
+    global device, deviceLocked, client
     print 'OK ', cmd[0], cmd[1]
+
     if cmd[0] == 'setline':
         line = int(cmd[1][0])
         text = cmd[1][1]
         if text == "{test}":
             text = unichr(0)+unichr(1)+unichr(2)+unichr(3)+unichr(4)+unichr(5)+unichr(6)+unichr(7)
         if text == "{time}":
-            text = strftime("        %H:%M:%S", gmtime())
+            text = strftime(unichr(4) + "Ana" + unichr(4) + " " + unichr(2) + " %H:%M:%S", gmtime())
         print "printing: ", text, " in line ", line
         while deviceLocked:
             pass
         deviceLocked = True
         device.lcd_display_string(text,line)
+        deviceLocked = False
+
+    elif cmd[0] == 'setchar':
+        line = int(cmd[1][0])
+        pos = int(cmd[1][1])
+        text = cmd[1][2]
+        while deviceLocked:
+            pass
+        deviceLocked = True
+        device.lcd_display_string(text,line,pos)
         deviceLocked = False
 
     elif cmd[0] == 'clearline':
@@ -238,7 +265,7 @@ def sendCommand(cmd):
         while deviceLocked:
             pass
         deviceLocked = True
-        device.lcd_backlight(status)
+        device.lcd_backlight(0)
         deviceLocked = False
 
     elif cmd[0] == 'clear':
@@ -250,17 +277,22 @@ def sendCommand(cmd):
 
 def init():
     global device
-    device = lcd(0x27, 1, True, False)
+    ##device = lcd(0x27, 1, True, False)
+    device = RPi_I2C_driver.lcd()
     ## device = lcd(0x27, 1, backlight, initFlag)
     device.lcd_clear()
+    device.lcd_load_custom_chars(customCharacters)
+
 
 init()
-thread = clockAnimation()
-thread.start()
+clockAnimation().start()
+pacmanAnimation().start()
+#thread = clockAnimation()
+#thread.start()
 while 1:
-    thread.join(500)
-    if not thread.isAlive():
-        break
+    #thread.join(500)
+    #if not thread.isAlive():
+    #    break
     client, address = s.accept()
     try:
         data = client.recv(size)
