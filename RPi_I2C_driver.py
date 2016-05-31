@@ -137,21 +137,6 @@ class lcd:
    def lcd_write_char(self, charvalue, mode=1):
       self.lcd_write_four_bits(mode | (charvalue & 0xF0))
       self.lcd_write_four_bits(mode | ((charvalue << 4) & 0xF0))
-  
-
-   # put string function
-   def lcd_display_string(self, string, line):
-      if line == 1:
-         self.lcd_write(0x80)
-      if line == 2:
-         self.lcd_write(0xC0)
-      if line == 3:
-         self.lcd_write(0x94)
-      if line == 4:
-         self.lcd_write(0xD4)
-
-      for char in string:
-         self.lcd_write(ord(char), Rs)
 
    # clear lcd and set to home
    def lcd_clear(self):
@@ -170,10 +155,10 @@ class lcd:
       self.lcd_write(0x40);
       for char in fontdata:
          for line in char:
-            self.lcd_write_char(line)         
-         
+            self.lcd_write_char(line)
+
    # define precise positioning (addition from the forum)
-   def lcd_display_string_pos(self, string, line, pos):
+   def lcd_display_string(self, string, line=1, pos=0):
     if line == 1:
       pos_new = pos
     elif line == 2:

@@ -12,7 +12,7 @@ QUIT
 """
 import re
 import socket
-from lcdsrv import lcd
+import RPi_I2C_driver
 from time import *
 from time import gmtime, strftime
 from threading import Thread
@@ -30,6 +30,155 @@ s.listen(backlog)
 device = None
 deviceLocked = False
 
+customCharacters = [
+    # Char 0: thermometer
+    [
+        0b00100,
+        0b01010,
+        0b01010,
+        0b01110,
+        0b01110,
+        0b11111,
+        0b11111,
+        0b01110
+    ],
+    # Char 1: water drop
+    [
+        0b00100,
+        0b00100,
+        0b01010,
+        0b01010,
+        0b10001,
+        0b10001,
+        0b10001,
+        0b01110
+    ],
+    # Char 2: clock
+    [
+        0b00000,
+        0b01110,
+        0b10101,
+        0b10111,
+        0b10001,
+        0b01110,
+        0b00000,
+        0b00000
+    ],
+    # Char 3: arrow
+    [
+        0b01000,
+        0b01100,
+        0b11110,
+        0b11111,
+        0b11110,
+        0b01100,
+        0b01000,
+        0b00000
+    ],
+    # Char 4: heart
+    [
+        0b00000,
+        0b01010,
+        0b11111,
+        0b11111,
+        0b01110,
+        0b00100,
+        0b00000,
+        0b00000
+    ],
+    # Char 5: pacman open
+    [
+        0b00000,
+        0b01111,
+        0b11110,
+        0b11100,
+        0b11110,
+        0b01111,
+        0b00000,
+        0b00000
+    ],
+    # Char 6: pacman closed
+    [
+        0b00000,
+        0b01110,
+        0b11111,
+        0b11111,
+        0b11111,
+        0b01110,
+        0b00000,
+        0b00000
+    ],
+    # Char 7: ghost
+    [
+        0b00000,
+        0b01110,
+        0b11101,
+        0b11111,
+        0b11111,
+        0b10101,
+        0b00000,
+        0b00000
+    ]
+];
+
+"""
+    # bell
+    [
+        0b00000,
+        0b00100,
+        0b01110,
+        0b01110,
+        0b01110,
+        0b11111,
+        0b00100,
+        0b00000
+    ],
+    # tick
+    [
+        0b00000,
+        0b00000,
+        0b00001,
+        0b00010,
+        0b10100,
+        0b01000,
+        0b00000,
+        0b00000
+    ],
+    # alien
+    [
+        0b11111,
+        0b10101,
+        0b11111,
+        0b11111,
+        0b01110
+        0b01010,
+        0b11011,
+        0b00000,
+    ],
+    # pacman tall
+    [
+        0b01110,
+        0b11011,
+        0b11110,
+        0b11100,
+        0b11110,
+        0b11111,
+        0b01110,
+        0b00000
+    ],
+    # ghost tall
+    [
+        0b01110,
+        0b01110,
+        0b11111,
+        0b10101,
+        0b11111,
+        0b11111,
+        0b10101,
+        0b00000
+    ],
+"""
+
 class clockAnimation(Thread):
     def run(self):
         while True:
@@ -42,6 +191,7 @@ def parseCommand(data):
         'clearline': r'clearline ([12])',
         'setline': r'setline ([12]) (.*)',
         'setchar': r'setchar ([12]) ([1-9]{1,2}) ([a-z])',
+        'backlight': r'backlight ([01])',
         'quit': r'quit'
     }
 
@@ -64,13 +214,15 @@ def sendCommand(cmd):
     if cmd[0] == 'setline':
         line = int(cmd[1][0])
         text = cmd[1][1]
+        if text == "{test}":
+            text = unichr(0)+unichr(1)+unichr(2)+unichr(3)+unichr(4)+unichr(5)+unichr(6)+unichr(7)
         if text == "{time}":
             text = strftime("        %H:%M:%S", gmtime())
         print "printing: ", text, " in line ", line
         while deviceLocked:
             pass
         deviceLocked = True
-        device.lcd_puts(text,line)
+        device.lcd_display_string(text,line)
         deviceLocked = False
 
     elif cmd[0] == 'clearline':
@@ -78,7 +230,15 @@ def sendCommand(cmd):
         while deviceLocked:
             pass
         deviceLocked = True
-        device.lcd_puts("                 ",line)
+        device.lcd_display_string("                 ",line)
+        deviceLocked = False
+
+    elif cmd[0] == 'backlight':
+        status = int(cmd[1][0])
+        while deviceLocked:
+            pass
+        deviceLocked = True
+        device.lcd_backlight(status)
         deviceLocked = False
 
     elif cmd[0] == 'clear':
@@ -95,8 +255,12 @@ def init():
     device.lcd_clear()
 
 init()
-clockAnimation().start()
+thread = clockAnimation()
+thread.start()
 while 1:
+    thread.join(500)
+    if not thread.isAlive():
+        break
     client, address = s.accept()
     try:
         data = client.recv(size)
@@ -114,8 +278,8 @@ while 1:
             data = client.recv(size)
         else:
             client.close()
-    except (socket.error), e: 
+    except (socket.error), e:
         client.close()
         print e.args, e.message
 
-    cmd = None 
+    cmd = None
