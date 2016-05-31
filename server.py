@@ -12,7 +12,8 @@ QUIT
 """
 import re
 import socket
-import RPi_I2C_driver
+from lib.lcd_i2c_driver import i2c_lcd
+from data import custom_characters
 from time import *
 from time import gmtime, strftime
 from threading import Thread
@@ -28,7 +29,6 @@ s.bind((host,port))
 s.listen(backlog)
 
 device = None
-deviceLocked = False
 
 customCharacters = [
     # Char 0: thermometer
@@ -225,7 +225,7 @@ def parseCommand(data):
     return [ command, args ]
 
 def sendCommand(cmd):
-    global device, deviceLocked, client
+    global device
     print 'OK ', cmd[0], cmd[1]
 
     if cmd[0] == 'setline':
@@ -236,52 +236,30 @@ def sendCommand(cmd):
         if text == "{time}":
             text = strftime(unichr(4) + "Ana" + unichr(4) + " " + unichr(2) + " %H:%M:%S", gmtime())
         print "printing: ", text, " in line ", line
-        while deviceLocked:
-            pass
-        deviceLocked = True
-        device.lcd_display_string(text,line)
-        deviceLocked = False
+        device.display_string(text,line)
 
     elif cmd[0] == 'setchar':
         line = int(cmd[1][0])
         pos = int(cmd[1][1])
         text = cmd[1][2]
-        while deviceLocked:
-            pass
-        deviceLocked = True
-        device.lcd_display_string(text,line,pos)
-        deviceLocked = False
+        device.display_string(text,line,pos)
 
     elif cmd[0] == 'clearline':
         line = cmd[1][0]
-        while deviceLocked:
-            pass
-        deviceLocked = True
-        device.lcd_display_string("                 ",line)
-        deviceLocked = False
+        device.display_string("                 ",line)
 
     elif cmd[0] == 'backlight':
         status = int(cmd[1][0])
-        while deviceLocked:
-            pass
-        deviceLocked = True
-        device.lcd_backlight(0)
-        deviceLocked = False
+        device.backlight(0)
 
     elif cmd[0] == 'clear':
-        while deviceLocked:
-            pass
-        deviceLocked = True
-        device.lcd_clear()
-        deviceLocked = False
+        device.clear()
 
 def init():
     global device
-    ##device = lcd(0x27, 1, True, False)
-    device = RPi_I2C_driver.lcd()
-    ## device = lcd(0x27, 1, backlight, initFlag)
-    device.lcd_clear()
-    device.lcd_load_custom_chars(customCharacters)
+    device = i2c_lcd(0x27, 1, backlight=True)
+    device.clear()
+    device.load_custom_chars(customCharacters)
 
 
 init()
