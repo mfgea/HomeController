@@ -5,8 +5,8 @@ Mock file for lcd_i2c_driver.py
 
 class i2c_lcd:
     #initializes objects and lcd
-    def __init__(self):
-        print "Initialized!"
+    def __init__(self, address):
+        print "Initialized at ", address
 
     # clear lcd and set to home
     def clear(self):

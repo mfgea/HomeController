@@ -1,4 +1,4 @@
-def customCharacters():
+def get_data():
     return [
         # Char 0: thermometer
         [
