@@ -12,11 +12,11 @@ QUIT
 """
 import re
 import socket
-from lib.lcd_i2c_driver import i2c_lcd
-from data import custom_characters
-from time import *
-from time import gmtime, strftime
-from threading import Thread
+import sys
+from libs.i2c_lcd_driver import i2c_lcd
+from libs.pacman_clock_screensaver import Screensaver
+from data.custom_characters import custom_characters
+from time import gmtime, strftime, sleep
 
 host = '127.0.0.1'
 port = 5055
@@ -29,177 +29,6 @@ s.bind((host,port))
 s.listen(backlog)
 
 device = None
-
-customCharacters = [
-    # Char 0: thermometer
-    [
-        0b00100,
-        0b01010,
-        0b01010,
-        0b01110,
-        0b01110,
-        0b11111,
-        0b11111,
-        0b01110
-    ],
-    # Char 1: water drop
-    [
-        0b00100,
-        0b00100,
-        0b01010,
-        0b01010,
-        0b10001,
-        0b10001,
-        0b10001,
-        0b01110
-    ],
-    # Char 2: clock
-    [
-        0b00000,
-        0b01110,
-        0b10101,
-        0b10111,
-        0b10001,
-        0b01110,
-        0b00000,
-        0b00000
-    ],
-    # Char 3: arrow
-    [
-        0b01000,
-        0b01100,
-        0b11110,
-        0b11111,
-        0b11110,
-        0b01100,
-        0b01000,
-        0b00000
-    ],
-    # Char 4: heart
-    [
-        0b00000,
-        0b01010,
-        0b11111,
-        0b11111,
-        0b01110,
-        0b00100,
-        0b00000,
-        0b00000
-    ],
-    # Char 5: pacman open
-    [
-        0b00000,
-        0b01111,
-        0b11010,
-        0b11100,
-        0b11110,
-        0b01111,
-        0b00000,
-        0b00000
-    ],
-    # Char 6: pacman closed
-    [
-        0b00000,
-        0b01110,
-        0b11011,
-        0b11100,
-        0b11111,
-        0b01110,
-        0b00000,
-        0b00000
-    ],
-    # Char 7: ghost
-    [
-        0b00000,
-        0b01110,
-        0b10101,
-        0b11111,
-        0b11111,
-        0b10101,
-        0b00000,
-        0b00000
-    ]
-];
-
-"""
-    # bell
-    [
-        0b00000,
-        0b00100,
-        0b01110,
-        0b01110,
-        0b01110,
-        0b11111,
-        0b00100,
-        0b00000
-    ],
-    # tick
-    [
-        0b00000,
-        0b00000,
-        0b00001,
-        0b00010,
-        0b10100,
-        0b01000,
-        0b00000,
-        0b00000
-    ],
-    # alien
-    [
-        0b11111,
-        0b10101,
-        0b11111,
-        0b11111,
-        0b01110
-        0b01010,
-        0b11011,
-        0b00000,
-    ],
-    # pacman tall
-    [
-        0b01110,
-        0b11011,
-        0b11110,
-        0b11100,
-        0b11110,
-        0b11111,
-        0b01110,
-        0b00000
-    ],
-    # ghost tall
-    [
-        0b01110,
-        0b01110,
-        0b11111,
-        0b10101,
-        0b11111,
-        0b11111,
-        0b10101,
-        0b00000
-    ],
-"""
-
-class pacmanAnimation(Thread):
-    def run(self):
-        pos = 0
-        prevPos = -1
-        while True:
-            if prevPos > -1:
-                sendCommand([ 'setchar', [1, prevPos, " "]])
-            sendCommand([ 'setchar', [1, pos, unichr(5+(pos%2))]])
-            sendCommand([ 'setchar', [1, pos+1, " "]])
-            sendCommand([ 'setchar', [1, pos+2, unichr(7)]])
-            prevPos = pos
-            pos = pos + 1
-            if pos > 15:
-                pos = 0
-            sleep(1)
-
-class clockAnimation(Thread):
-    def run(self):
-        while True:
-            sendCommand(['setline', [2, '{time}']])
-            sleep(1)
 
 def parseCommand(data):
     validCommands = {
@@ -257,39 +86,41 @@ def sendCommand(cmd):
 
 def init():
     global device
-    device = i2c_lcd(0x27, 1, backlight=True)
+    # device = i2c_lcd(0x27, 1, backlight=True)
+    device = i2c_lcd(0x27)
     device.clear()
     device.load_custom_chars(customCharacters)
 
 
-init()
-clockAnimation().start()
-pacmanAnimation().start()
-#thread = clockAnimation()
-#thread.start()
-while 1:
-    #thread.join(500)
-    #if not thread.isAlive():
-    #    break
-    client, address = s.accept()
-    try:
-        data = client.recv(size)
-        while data or 0:
-            if data:
-                cmd = parseCommand(data)
-
-            if cmd:
-                if cmd[0] == 'quit':
-                    client.close()
-                else:
-                    sendCommand(cmd)
-            else:
-                print "Invalid command"
+def main(args):
+    init()
+    screensaver = Screensaver()
+    screensaver.daemon = True
+    screensaver.start()
+    while 1:
+        client, address = s.accept()
+        try:
             data = client.recv(size)
-        else:
-            client.close()
-    except (socket.error), e:
-        client.close()
-        print e.args, e.message
+            while data or 0:
+                if data:
+                    cmd = parseCommand(data)
 
-    cmd = None
+                if cmd:
+                    if cmd[0] == 'quit':
+                        client.close()
+                    else:
+                        sendCommand(cmd)
+                else:
+                    print "Invalid command"
+                data = client.recv(size)
+            else:
+                client.close()
+        except (socket.error), e:
+            client.close()
+            print e.args, e.message
+
+        cmd = None
+
+if __name__ == '__main__':
+  main(sys.argv)
+

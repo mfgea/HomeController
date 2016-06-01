@@ -11,7 +11,7 @@ Made available under GNU GENERAL PUBLIC LICENSE
 # 2015-02-10, ver 0.1
 
 """
-import i2c_device
+from i2c_device import i2c_device
 from time import sleep
 
 # LCD Address
@@ -63,11 +63,11 @@ En = 0b00000100 # Enable bit
 Rw = 0b00000010 # Read/Write bit
 Rs = 0b00000001 # Register select bit
 
-class lcd:
+class i2c_lcd:
     #initializes objects and lcd
-    def __init__(self):
+    def __init__(self, address=ADDRESS):
         self.locked = True
-        self.__device = i2c_device(ADDRESS)
+        self.__device = i2c_device(address)
 
         self.__write(0x03)
         self.__write(0x03)
