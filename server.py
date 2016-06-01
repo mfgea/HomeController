@@ -13,9 +13,10 @@ QUIT
 import re
 import socket
 import sys
+from threading import Thread
 from libs.i2c_lcd_driver import i2c_lcd
-from libs.pacman_clock_screensaver import Screensaver
-from data.custom_characters import custom_characters
+## from libs.pacman_clock_screensaver import Screensaver
+from data import custom_characters
 from time import gmtime, strftime, sleep
 
 host = '127.0.0.1'
@@ -29,6 +30,23 @@ s.bind((host,port))
 s.listen(backlog)
 
 device = None
+
+class Screensaver(Thread):
+    def run(self):
+        pos = 0
+        prevPos = -1
+        while True:
+            if prevPos > -1:
+                sendCommand([ 'setchar', [1, prevPos, " "]])
+            sendCommand([ 'setchar', [1, pos, unichr(5+(pos%2))]])
+            sendCommand([ 'setchar', [1, pos+1, " "]])
+            sendCommand([ 'setchar', [1, pos+2, unichr(7)]])
+            prevPos = pos
+            pos = pos + 1
+            if pos > 15:
+                pos = 0
+            sendCommand(['setline', [2, '{time}']])
+            sleep(1)
 
 def parseCommand(data):
     validCommands = {
@@ -89,7 +107,7 @@ def init():
     # device = i2c_lcd(0x27, 1, backlight=True)
     device = i2c_lcd(0x27)
     device.clear()
-    device.load_custom_chars(customCharacters)
+    device.load_custom_chars(custom_characters.customCharacters())
 
 
 def main(args):
@@ -98,8 +116,8 @@ def main(args):
     screensaver.daemon = True
     screensaver.start()
     while 1:
-        client, address = s.accept()
         try:
+            client, address = s.accept()
             data = client.recv(size)
             while data or 0:
                 if data:
@@ -118,6 +136,10 @@ def main(args):
         except (socket.error), e:
             client.close()
             print e.args, e.message
+        except KeyboardInterrupt:
+            print "GoodBye!"
+            device.backlight(0)
+            break
 
         cmd = None
 
