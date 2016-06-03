@@ -7,9 +7,10 @@ class Screensaver():
         self.run_loop()
 
     def run_loop(self):
+        self.running = True
         pos = 0
         prevPos = -1
-        while True:
+        while self.running:
             if prevPos > -1:
                 self.lcd.sendCommand('setchar', [1, prevPos, " "])
             self.lcd.sendCommand('setchar', [1, pos, unichr(5+(pos%2))])
@@ -22,4 +23,5 @@ class Screensaver():
             self.lcd.sendCommand('setline', [2, '{time}'])
             sleep(1)
 
-
+    def stop(self):
+        self.running = False;
