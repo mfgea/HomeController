@@ -36,14 +36,15 @@ class Sensors:
     def __init__(self):
         self.sensor = Adafruit_DHT.DHT11
         self.pin = 4
-        self.interval = 5
+        self.interval = 30
         self.humidity = 0.0
         self.temperature = 0.0
 
     def read_data(self):
-        humidity, temperature = Adafruit_DHT.read_retry(self.sensor, self.pin)
-        self.humidity = humidity
-        self.temperature = temperature
+        humidity, temperature = Adafruit_DHT.read(self.sensor, self.pin)
+        if humidity and temperature:
+            self.humidity = humidity
+            self.temperature = temperature
 
     def get_temperature(self):
         return self.temperature

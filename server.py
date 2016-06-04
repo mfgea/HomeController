@@ -15,6 +15,7 @@ import socket
 import sys
 import argparse
 import logging
+import time
 
 from gaugette.rotary_encoder import RotaryEncoder
 from gaugette.switch import Switch
@@ -23,7 +24,6 @@ from libs.lcd_interface import lcd_interface
 from libs.sensors import Sensors
 from screensavers.pacman_clock import Screensaver
 from data import custom_characters
-from time import gmtime, strftime, sleep
 
 HOST = '127.0.0.1'
 PORT = 5055
@@ -63,37 +63,62 @@ def init(mock=False):
 
 sensors_data = {
     'temp': 0.0,
-    'desired': 0.0,
+    'desired': 21.0,
     'humidity': 0.0,
     'standby': True
 }
 
 
 def main_loop():
+    desired = sensors_data['desired']
+    dirty = True
+    dirty_time = time.time()
+    backlight_time = None
     last_state = False
     while True:
         delta = encoder.get_delta()
         if delta != 0:
-            print delta
-            sensors_data['desired'] = sensors_data['desired'] + 0.5 * delta
-            print sensors_data['desired']
+            encoder.reset_delta()
+            desired += 0.5 * delta
+            if desired < 17:
+                desired = 17
+            if desired > 30:
+                desired = 30
+            sensors_data['desired'] = desired
+            dirty = True
 
         sw_state = switch.get_state()
         if sw_state != last_state:
-            print sw_state, last_state
             sensors_data['standby'] = not sensors_data['standby']
             last_state = 0
+            dirty = True
 
         sensors_data['temp'] = sensors.get_temperature()
         sensors_data['humidity'] = sensors.get_humidity()
 
-        line1 = unichr(1) + " " + "{:.1f}%".format(sensors_data['humidity']) + "  " + unichr(0) + " " + "{:.1f}".format(sensors_data['temp']) + unichr(0b11011111)
-        if sensors_data['standby']:
-            line2 = '       {time}'
-        else:
-            line2 = unichr(0) + "   Target: " + "{:.1f}".format(sensors_data['desired']) + unichr(0b11011111)
-        lcd.display_string(line1, 1)
-        lcd.display_string(line2, 2)
+        if dirty:
+            backlight_time = time.time()
+            lcd.backlight(1)
+        elif backlight_time and time.time() - backlight_time > 10:
+            backlight_time = None
+            lcd.backlight(0)
+            lcd.backlight(0)
+            lcd.backlight(0)
+           
+
+        if (time.time() - dirty_time) >= 0.1:
+            dirty = True
+            
+        if dirty:
+            line1 = unichr(1) + " " + "{:.1f}%".format(sensors_data['humidity']) + "  " + unichr(0) + " " + "{:.1f}".format(sensors_data['temp']) + unichr(0b11011111)
+            if sensors_data['standby']:
+                line2 = '       {time}'
+            else:
+                line2 = unichr(0) + "   Target: " + "{:.1f}".format(sensors_data['desired']) + unichr(0b11011111)
+            lcd.display_string(line1, 1)
+            lcd.display_string(line2, 2)
+            dirty = False
+            dirt_time = time.time()
 
 def main(args):
     init(args.mock)

@@ -123,7 +123,7 @@ class RotaryEncoder:
             self.encoder = RotaryEncoder(a_pin, b_pin)
             self.daemon = True
             self.delta = 0
-            self.delay = 0.001
+            self.delay = 0.005
 
         def run(self):
             while not self.stopping:
@@ -137,6 +137,15 @@ class RotaryEncoder:
 
         def get_delta(self):
             with self.lock:
-                delta = self.delta
+                if self.delta > 0:
+                    delta = 1
+                elif self.delta < 0:
+                    delta = -1
+                else:
+                    delta = 0
                 self.delta = 0
             return delta
+
+        def reset_delta(self):
+            with self.lock:
+                self.delta = 0

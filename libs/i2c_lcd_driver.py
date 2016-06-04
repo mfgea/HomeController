@@ -119,9 +119,9 @@ class i2c_lcd:
             pass
         self.locked = True
         if state == 1:
-            self.__device.write_cmd(LCD_BACKLIGHT)
+            self.__device.write_cmd(LCD_DISPLAYCONTROL | LCD_BACKLIGHT)
         elif state == 0:
-            self.__device.write_cmd(LCD_NOBACKLIGHT)
+            self.__device.write_cmd(LCD_DISPLAYCONTROL | LCD_NOBACKLIGHT)
         self.locked = False
 
     # add custom characters (0 - 7)
