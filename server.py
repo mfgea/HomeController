@@ -1,5 +1,5 @@
-# -*- coding: utf-8 -*-
 #!/usr/bin/env python
+# -*- coding: utf-8 -*-
 
 """
 Server for controlling output to an I2C LCD and input from a rotary encoder
@@ -20,6 +20,7 @@ from gaugette.rotary_encoder import RotaryEncoder
 from gaugette.switch import Switch
 from threading import Thread
 from libs.lcd_interface import lcd_interface
+from libs.sensors import Sensors
 from screensavers.pacman_clock import Screensaver
 from data import custom_characters
 from time import gmtime, strftime, sleep
