@@ -45,6 +45,7 @@ lcd = None
 switch = None
 encoder = None
 sensors = None
+standby = True
 
 def init(mock=False):
     global lcd, switch, encoder, sensors
@@ -73,12 +74,15 @@ def main_loop():
     while True:
         delta = encoder.get_delta()
         if delta != 0:
+            print delta
             sensors_data['desired'] = sensors_data['desired'] + 0.5 * delta
+            print sensors_data['desired']
 
         sw_state = switch.get_state()
         if sw_state != last_state:
+            print sw_state, last_state
             sensors_data['standby'] = not sensors_data['standby']
-            last_state = sw_state
+            last_state = 0
 
         sensors_data['temp'] = sensors.get_temperature()
         sensors_data['humidity'] = sensors.get_humidity()
