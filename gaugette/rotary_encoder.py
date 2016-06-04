@@ -23,7 +23,7 @@
 #       if delta!=0:
 #         print delta
 
-import gaugette.gpio
+import RPi.GPIO as GPIO
 import math
 import threading
 import time
@@ -38,10 +38,10 @@ class RotaryEncoder:
         self.a_pin = a_pin
         self.b_pin = b_pin
 
-        self.gpio = gaugette.gpio.GPIO()
+        GPIO.setmode(GPIO.BCM)
 
-        self.gpio.setup(self.a_pin, self.gpio.IN, self.gpio.PUD_UP)
-        self.gpio.setup(self.b_pin, self.gpio.IN, self.gpio.PUD_UP)
+        GPIO.setup(self.a_pin, GPIO.IN, pull_up_down=GPIO.PUD_UP)
+        GPIO.setup(self.b_pin, GPIO.IN, pull_up_down=GPIO.PUD_UP)
 
         self.last_delta = 0
         self.r_seq = self.rotation_sequence()
@@ -57,8 +57,8 @@ class RotaryEncoder:
     # Gets the 2-bit rotation state of the current position
     # This is deprecated - we now use rotation_sequence instead.
     def rotation_state(self):
-        a_state = self.gpio.input(self.a_pin)
-        b_state = self.gpio.input(self.b_pin)
+        a_state = GPIO.input(self.a_pin)
+        b_state = GPIO.input(self.b_pin)
         r_state = a_state | b_state << 1
         return r_state
 
@@ -76,8 +76,8 @@ class RotaryEncoder:
     #   seq = (A ^ B) | B << 2
     # 
     def rotation_sequence(self):
-        a_state = self.gpio.input(self.a_pin)
-        b_state = self.gpio.input(self.b_pin)
+        a_state = GPIO.input(self.a_pin)
+        b_state = GPIO.input(self.b_pin)
         r_seq = (a_state ^ b_state) | b_state << 1
         return r_seq
 

@@ -26,6 +26,7 @@ class lcd_interface():
         self.__device.backlight(status)
 
     def display_string(self, text, line=1, pos=0):
+        text = text.replace("{time}", strftime( unichr(2) + "%H:%M:%S", gmtime()))
         self.__device.display_string(text, line, pos)
 
     def startScreensaver(self):
@@ -73,8 +74,6 @@ class lcd_interface():
             text = args[1]
             if text == "{test}":
                 text = unichr(0)+unichr(1)+unichr(2)+unichr(3)+unichr(4)+unichr(5)+unichr(6)+unichr(7)
-            if text == "{time}":
-                text = strftime(unichr(4) + "Ana" + unichr(4) + " " + unichr(2) + " %H:%M:%S", gmtime())
             print "printing: ", text, " in line ", line
             self.display_string(text,line)
 

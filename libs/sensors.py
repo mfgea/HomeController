@@ -49,7 +49,7 @@ class Sensors:
         return self.temperature
 
     def get_humidity(self):
-        return self.temperature
+        return self.humidity
 
     class Worker(threading.Thread):
         def __init__(self):
@@ -79,3 +79,9 @@ class Sensors:
                 temperature = self.sensors.get_temperature()
             return temperature
 
+
+if __name__ == '__main__':
+    sensors = Sensors()
+    sensors.read_data()
+    print sensors.get_temperature()
+    print sensors.get_humidity()

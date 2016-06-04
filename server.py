@@ -16,7 +16,7 @@ import sys
 import argparse
 import logging
 
-#from gaugette.rotary_encoder import RotaryEncoder
+from gaugette.rotary_encoder import RotaryEncoder
 from gaugette.switch import Switch
 from threading import Thread
 from libs.lcd_interface import lcd_interface
@@ -53,8 +53,8 @@ def init(mock=False):
     lcd.load_custom_chars(custom_characters.get_data())
     lcd.set_screensaver(Screensaver)
     switch = Switch(SWITCH_PIN)
-    #encoder = RotaryEncoder.Worker(ENCODER_PIN_A, ENCODER_PIN_B)
-    #encoder.start()
+    encoder = RotaryEncoder.Worker(ENCODER_PIN_A, ENCODER_PIN_B)
+    encoder.start()
 
     sensors = Sensors.Worker()
     sensors.start()
@@ -71,8 +71,7 @@ sensors_data = {
 def main_loop():
     last_state = False
     while True:
-        #delta = encoder.get_delta()
-        delta = 0
+        delta = encoder.get_delta()
         if delta != 0:
             sensors_data['desired'] = sensors_data['desired'] + 0.5 * delta
 
@@ -84,8 +83,11 @@ def main_loop():
         sensors_data['temp'] = sensors.get_temperature()
         sensors_data['humidity'] = sensors.get_humidity()
 
-        line1 = unichr(1) + " " + "{:.1%}".format(sensors_data['humidity']) + "  " + unichr(0) + " " + "{:.1f}".format(sensors_data['temp']) + "o"
-        line2 = unichr(0) + " Desired: " + "{:.1f}".format(sensors_data['desired']) + "o"
+        line1 = unichr(1) + " " + "{:.1f}%".format(sensors_data['humidity']) + "  " + unichr(0) + " " + "{:.1f}".format(sensors_data['temp']) + unichr(0b11011111)
+        if sensors_data['standby']:
+            line2 = '       {time}'
+        else:
+            line2 = unichr(0) + "   Target: " + "{:.1f}".format(sensors_data['desired']) + unichr(0b11011111)
         lcd.display_string(line1, 1)
         lcd.display_string(line2, 2)
 
