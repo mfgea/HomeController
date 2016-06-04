@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 #!/usr/bin/env python
 
 """
@@ -29,9 +30,9 @@ BACKLOG = 3
 SIZE = 1024
 
 LCD_ADDRESS = 0x27
-SWITCH_PIN = 9
-ENCODER_PIN_A = 7
-ENCODER_PIN_B = 8
+SWITCH_PIN = 11
+ENCODER_PIN_A = 10
+ENCODER_PIN_B = 9
 
 s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
@@ -59,10 +60,10 @@ def init(mock=False):
 
 
 sensors_data = {
-    temp: 0.0,
-    desired: 0.0,
-    humidity: 0.0,
-    standby: True
+    'temp': 0.0,
+    'desired': 0.0,
+    'humidity': 0.0,
+    'standby': True
 }
 
 last_state = False
@@ -81,8 +82,8 @@ def main_loop():
         sensors_data['temp'] = sensors.get_temperature()
         sensors_data['humidity'] = sensors.get_humidity()
 
-        line1 = unichr(1) + " " + "{:.1%}".format(sensors_data['humidity']) + "  " + unichr(0) + " " + "{:.1f}".format(sensors_data['temp']) + "º"
-        line2 = unichr(0) + " Desired: " + "{:.1f}".format(sensors_data['desired']) + "º"
+        line1 = unichr(1) + " " + "{:.1%}".format(sensors_data['humidity']) + "  " + unichr(0) + " " + "{:.1f}".format(sensors_data['temp']) + "o"
+        line2 = unichr(0) + " Desired: " + "{:.1f}".format(sensors_data['desired']) + "o"
         lcd.display_string(line1, 1)
         lcd.display_string(line2, 2)
 
