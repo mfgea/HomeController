@@ -78,8 +78,8 @@ def main_loop():
             sensors_data['standby'] = not sensors_data['standby']
             last_state = sw_state
 
-        sensors_data['temp'] = sensors.getTemp()
-        sensors_data['humidity'] = sensors.getHumidity()
+        sensors_data['temp'] = sensors.get_temperature()
+        sensors_data['humidity'] = sensors.get_humidity()
 
         line1 = unichr(1) + " " + "{:.1%}".format(sensors_data['humidity']) + "  " + unichr(0) + " " + "{:.1f}".format(sensors_data['temp']) + "º"
         line2 = unichr(0) + " Desired: " + "{:.1f}".format(sensors_data['desired']) + "º"
