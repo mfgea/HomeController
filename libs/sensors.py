@@ -33,7 +33,7 @@ class Sensors:
     # Pass the wiring pin numbers here.  See:
     #  https://projects.drogon.net/raspberry-pi/wiringpi2/pins/
     #----------------------------------------------------------------------
-    def __init__(self, a_pin, b_pin):
+    def __init__(self):
         self.sensor = Adafruit_DHT.DHT11
         self.pin = 4
         self.interval = 5
@@ -41,7 +41,7 @@ class Sensors:
         self.temperature = 0.0
 
     def read_data(self):
-        humidity, temperature = Adafruit_DHT.read_retry(sensor, pin)
+        humidity, temperature = Adafruit_DHT.read_retry(self.sensor, self.pin)
         self.humidity = humidity
         self.temperature = temperature
 
@@ -76,6 +76,6 @@ class Sensors:
 
         def get_temperature(self):
             with self.lock:
-                temperature = self.sensors.temperature()
+                temperature = self.sensors.get_temperature()
             return temperature
 

@@ -16,7 +16,7 @@ import sys
 import argparse
 import logging
 
-from gaugette.rotary_encoder import RotaryEncoder
+#from gaugette.rotary_encoder import RotaryEncoder
 from gaugette.switch import Switch
 from threading import Thread
 from libs.lcd_interface import lcd_interface
@@ -53,8 +53,8 @@ def init(mock=False):
     lcd.load_custom_chars(custom_characters.get_data())
     lcd.set_screensaver(Screensaver)
     switch = Switch(SWITCH_PIN)
-    encoder = RotaryEncoder.Worker(ENCODER_PIN_A, ENCODER_PIN_B)
-    encoder.start()
+    #encoder = RotaryEncoder.Worker(ENCODER_PIN_A, ENCODER_PIN_B)
+    #encoder.start()
 
     sensors = Sensors.Worker()
     sensors.start()
@@ -67,11 +67,12 @@ sensors_data = {
     'standby': True
 }
 
-last_state = False
 
 def main_loop():
+    last_state = False
     while True:
-        delta = encoder.get_delta()
+        #delta = encoder.get_delta()
+        delta = 0
         if delta != 0:
             sensors_data['desired'] = sensors_data['desired'] + 0.5 * delta
 
