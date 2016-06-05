@@ -22,6 +22,7 @@ from gaugette.switch import Switch
 from threading import Thread
 from libs.lcd_interface import lcd_interface
 from libs.sensors import Sensors
+from libs.heating_system import HeatingSystem
 from screensavers.pacman_clock import Screensaver
 from data import custom_characters
 
@@ -35,6 +36,9 @@ SWITCH_PIN = 11
 ENCODER_PIN_A = 10
 ENCODER_PIN_B = 9
 
+HEATING_PIN = 17
+BOILER_PIN = 22
+
 s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
 
@@ -45,15 +49,17 @@ lcd = None
 switch = None
 encoder = None
 sensors = None
+heating = None
 standby = True
 
 def init(mock=False):
-    global lcd, switch, encoder, sensors
+    global lcd, switch, encoder, sensors, heating
 
     lcd = lcd_interface(LCD_ADDRESS, mock)
     lcd.load_custom_chars(custom_characters.get_data())
     lcd.set_screensaver(Screensaver)
     switch = Switch(SWITCH_PIN)
+    heating = HeatingSystem(HEATING_PIN, BOILER_PIN)
     encoder = RotaryEncoder.Worker(ENCODER_PIN_A, ENCODER_PIN_B)
     encoder.start()
 
@@ -105,16 +111,27 @@ def main_loop():
             lcd.backlight(0)
             lcd.backlight(0)
            
-
         if (time.time() - dirty_time) >= 0.1:
             dirty = True
             
         if dirty:
+            ## Update heating system
+            if sensors_data['standby']:
+                heating.system(0)
+                heating.boiler(0)
+            else:
+                heating.system(1)
+                if sensors_data['desired'] > sensors_data['temp']:
+                    heating.boiler(1)
+                else:
+                    heating.boiler(0)
+
+            ## Update LCD
             line1 = unichr(1) + " " + "{:.1f}%".format(sensors_data['humidity']) + "  " + unichr(0) + " " + "{:.1f}".format(sensors_data['temp']) + unichr(0b11011111)
             if sensors_data['standby']:
                 line2 = '       {time}'
             else:
-                line2 = unichr(0) + "   Target: " + "{:.1f}".format(sensors_data['desired']) + unichr(0b11011111)
+                line2 = unichr(4) + "   Target: " + "{:.1f}".format(sensors_data['desired']) + unichr(0b11011111)
             lcd.display_string(line1, 1)
             lcd.display_string(line2, 2)
             dirty = False
