@@ -10,6 +10,7 @@ class Switch:
             GPIO.setup(self.pin, GPIO.IN, pull_up_down=GPIO.PUD_UP)
         else:
             GPIO.setup(self.pin, GPIO.IN, pull_up_down=GPIO.PUD_DOWN)
+        GPIO.add_event_detect(self.pin, GPIO.RISING, self.get_state)
 
     def get_state(self):
         state = GPIO.input(self.pin)
