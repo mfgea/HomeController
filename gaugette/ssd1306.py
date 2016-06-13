@@ -26,7 +26,7 @@
 #   the attribute bytes following a command opcode are NOT considered data,
 #   data in this case refers only to the display memory buffer.
 #   keep D/C LOW for the command byte including any following argument bytes.
-#   Pull D/C HIGH only when writting to the display memory buffer.
+#   Pull D/C HIGH only when writing to the display memory buffer.
 #   
 # SPI and GPIO calls are made through an abstraction library that calls
 # the appropriate library for the platform.
