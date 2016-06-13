@@ -39,6 +39,9 @@ ENCODER_PIN_B = 9
 HEATING_PIN = 17
 BOILER_PIN = 22
 
+HEATING_RELAY = 14
+BOILER_RELAY = 15
+
 s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
 
@@ -59,7 +62,7 @@ def init(mock=False):
     lcd.load_custom_chars(custom_characters.get_data())
     lcd.set_screensaver(Screensaver)
     switch = Switch(SWITCH_PIN)
-    heating = HeatingSystem(HEATING_PIN, BOILER_PIN)
+    heating = HeatingSystem(HEATING_RELAY, BOILER_RELAY)
     encoder = RotaryEncoder.Worker(ENCODER_PIN_A, ENCODER_PIN_B)
     encoder.start()
 
@@ -107,8 +110,6 @@ def main_loop():
             lcd.backlight(1)
         elif backlight_time and time.time() - backlight_time > 10:
             backlight_time = None
-            lcd.backlight(0)
-            lcd.backlight(0)
             lcd.backlight(0)
            
         if (time.time() - dirty_time) >= 0.1:

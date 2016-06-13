@@ -67,6 +67,7 @@ class i2c_lcd:
     #initializes objects and lcd
     def __init__(self, address=ADDRESS):
         self.locked = True
+        self.backlight_status = LCD_BACKLIGHT
         self.__device = i2c_device(address)
 
         self.__write(0x03)
@@ -84,13 +85,13 @@ class i2c_lcd:
 
     # clocks EN to latch command
     def __strobe(self, data):
-        self.__device.write_cmd(data | En | LCD_BACKLIGHT)
+        self.__device.write_cmd(data | En | self.backlight_status)
         sleep(.0005)
-        self.__device.write_cmd(((data & ~En) | LCD_BACKLIGHT))
+        self.__device.write_cmd(((data & ~En) | self.backlight_status))
         sleep(.0001)
 
     def __write_four_bits(self, data):
-        self.__device.write_cmd(data | LCD_BACKLIGHT)
+        self.__device.write_cmd(data | self.backlight_status)
         self.__strobe(data)
 
     # write a command to lcd
@@ -119,9 +120,10 @@ class i2c_lcd:
             pass
         self.locked = True
         if state == 1:
-            self.__device.write_cmd(LCD_DISPLAYCONTROL | LCD_BACKLIGHT)
+            self.backlight_status = LCD_BACKLIGHT
         elif state == 0:
-            self.__device.write_cmd(LCD_DISPLAYCONTROL | LCD_NOBACKLIGHT)
+            self.backlight_status = LCD_NOBACKLIGHT
+        self.__device.write_cmd(self.backlight_status)
         self.locked = False
 
     # add custom characters (0 - 7)

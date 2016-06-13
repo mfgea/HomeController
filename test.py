@@ -1,28 +1,18 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-"""
-Server for controlling output to an I2C LCD and input from a rotary encoder
-
-Commands for LCD
-CLEAR
-CLEARLINE <linenumber>
-SETLINE <linenumber> <text>
-SETCHAR <linenumber> <pos> <char>
-QUIT
-"""
 import socket
 import sys
 import argparse
 import logging
 import time
 
-from gaugette.rotary_encoder import RotaryEncoder
-from gaugette.switch import Switch
-from threading import Thread
+#from gaugette.rotary_encoder import RotaryEncoder
+#from gaugette.switch import Switch
+#from threading import Thread
 from libs.lcd_interface import lcd_interface
-from libs.sensors import Sensors
-from libs.heating_system import HeatingSystem
+#from libs.sensors import Sensors
+#from libs.heating_system import HeatingSystem
 from screensavers.pacman_clock import Screensaver
 from data import custom_characters
 
@@ -58,10 +48,10 @@ def init(mock=False):
     lcd = lcd_interface(LCD_ADDRESS, mock)
     lcd.load_custom_chars(custom_characters.get_data())
     lcd.set_screensaver(Screensaver)
-    switch = Switch(SWITCH_PIN)
-    heating = HeatingSystem(HEATING_PIN, BOILER_PIN)
-    encoder = RotaryEncoder.Worker(ENCODER_PIN_A, ENCODER_PIN_B)
-    encoder.start()
+    #switch = Switch(SWITCH_PIN)
+    #heating = HeatingSystem(HEATING_PIN, BOILER_PIN)
+    #encoder = RotaryEncoder.Worker(ENCODER_PIN_A, ENCODER_PIN_B)
+    #encoder.start()
 
 ##    sensors = Sensors.Worker()
 ##    sensors.start()
@@ -74,6 +64,7 @@ sensors_data = {
     'standby': False
 }
 
+"""
 
 def main_loop():
     desired = sensors_data['desired']
@@ -134,6 +125,7 @@ def main_loop():
             lcd.display_string(line2, 2)
             dirty = False
             dirt_time = time.time()
+"""
 
 def main(args):
     init(args.mock)
@@ -165,5 +157,13 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('-m', '--mock', help='Uses a mock class for the lcd display (does not need a physical display)', action="store_true")
     args = parser.parse_args()
-    main(args)
+    init(args.mock)
+    lcd.backlight(1)
+    time.sleep(2)
+    lcd.backlight(0)
+    time.sleep(2)
+    lcd.backlight(1)
+    time.sleep(2)
+    lcd.backlight(0)
+    #main(args)
 

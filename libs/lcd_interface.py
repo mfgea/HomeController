@@ -1,6 +1,6 @@
 import re
 from threading import Thread
-from time import strftime, gmtime
+from time import strftime, localtime
 
 class lcd_interface():
     def __init__(self, address, mock=False):
@@ -26,7 +26,7 @@ class lcd_interface():
         self.__device.backlight(status)
 
     def display_string(self, text, line=1, pos=0):
-        text = text.replace("{time}", strftime( unichr(2) + "%H:%M:%S", gmtime()))
+        text = text.replace("{time}", strftime( unichr(2) + "%H:%M:%S", localtime()))
         self.__device.display_string(text, line, pos)
 
     def startScreensaver(self):
