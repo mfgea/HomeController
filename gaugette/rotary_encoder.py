@@ -127,7 +127,7 @@ class RotaryEncoder:
 
         def run(self):
             while not self.stopping:
-                delta = self.encoder.get_delta()
+                delta = self.encoder.get_cycles()
                 with self.lock:
                     self.delta += delta
                 time.sleep(self.delay)
@@ -137,15 +137,21 @@ class RotaryEncoder:
 
         def get_delta(self):
             with self.lock:
-                if self.delta > 0:
-                    delta = 1
-                elif self.delta < 0:
-                    delta = -1
-                else:
-                    delta = 0
+                delta = self.delta
                 self.delta = 0
             return delta
 
         def reset_delta(self):
             with self.lock:
                 self.delta = 0
+
+if __name__ == '__main__':
+    enc = RotaryEncoder(10, 9)
+    delta = 0
+
+    while True:
+        deltaone = enc.get_delta()
+        delta += deltaone
+        print delta
+        time.sleep(0.005)
+        pass

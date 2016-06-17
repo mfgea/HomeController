@@ -79,30 +79,28 @@ sensors_data = {
     'standby': True
 }
 
+def clip_int(num, lower, upper):
+    return max(lower, min(num, upper))
 
 def main(args):
     init(args.mock)
     desired = sensors_data['desired']
-    dirty = True
-    dirty_time = time.time()
     backlight_time = None
     last_state = False
+    dirty = True
     while True:
         try:
-            delta = encoder.get_delta()
-            if delta != 0:
-                encoder.reset_delta()
-                desired += 0.5 * delta
-                if desired < 17:
-                    desired = 17
-                if desired > 30:
-                    desired = 30
-                sensors_data['desired'] = desired
-                dirty = True
+            if not sensors_data['standby']:
+                delta = encoder.get_delta()
+                if delta != 0:
+                    desired += 0.5 * delta
+                    sensors_data['desired'] = clip_int(desired, 17, 30)
+                    dirty = True
 
             sw_state = toggle_switch.get_state()
-            dirty = sw_state != sensors_data['standby']
-            sensors_data['standby'] = sw_state
+            if sw_state != sensors_data['standby']:
+                sensors_data['standby'] = sw_state
+                dirty = True
 
             sensors_data['temp'] = sensors.get_temperature()
             sensors_data['humidity'] = sensors.get_humidity()
@@ -114,9 +112,6 @@ def main(args):
                 backlight_time = None
                 lcd.backlight(0)
                
-            if (time.time() - dirty_time) >= 0.1:
-                dirty = True
-                
             if dirty:
                 ## Update heating system
                 if sensors_data['standby']:
@@ -129,16 +124,18 @@ def main(args):
                     else:
                         heating.boiler(0)
 
-                ## Update LCD
-                line1 = unichr(1) + " " + "{:.1f}%".format(sensors_data['humidity']) + "  " + unichr(0) + " " + "{:.1f}".format(sensors_data['temp']) + unichr(0b11011111)
-                if sensors_data['standby']:
-                    line2 = '       {time}'
-                else:
-                    line2 = unichr(4) + "   Target: " + "{:.1f}".format(sensors_data['desired']) + unichr(0b11011111)
-                lcd.display_string(line1, 1)
-                lcd.display_string(line2, 2)
-                dirty = False
-                dirt_time = time.time()
+            ## Update LCD
+            line1  = unichr(1) + " " + "{:.1f}%".format(sensors_data['humidity'])
+            line1 += "  "
+            line1 += unichr(0) + " " + "{:.1f}".format(sensors_data['temp']) + unichr(0b11011111)
+            if sensors_data['standby']:
+                line2 = '       {time}'
+            else:
+                line2 = unichr(4) + "   Target: " + "{:.1f}".format(sensors_data['desired']) + unichr(0b11011111)
+            lcd.display_string(line1, 1)
+            lcd.display_string(line2, 2)
+
+            time.sleep(.1)
 
         except KeyboardInterrupt:
             lcd.backlight(0)
