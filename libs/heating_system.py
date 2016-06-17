@@ -8,22 +8,28 @@ class HeatingSystem:
     # Pass the wiring pin numbers here.  See:
     #  https://projects.drogon.net/raspberry-pi/wiringpi2/pins/
     #----------------------------------------------------------------------
-    def __init__(self, system_led_pin, boiler_led_pin):
-        self.boiler_switch = 0
-        self.system_switch = 0
+    def __init__(self, system_relay_pin, boiler_relay_pin, system_led_pin, boiler_led_pin):
+        self.boiler_status = 0
+        self.system_status = 0
+        self.system_relay_pin = system_relay_pin
+        self.boiler_relay_pin = boiler_relay_pin
         self.system_led_pin = system_led_pin
         self.boiler_led_pin = boiler_led_pin
         GPIO.setmode(GPIO.BCM)
+        GPIO.setup(system_relay_pin, GPIO.OUT)
+        GPIO.setup(boiler_relay_pin, GPIO.OUT)
         GPIO.setup(system_led_pin, GPIO.OUT)
         GPIO.setup(boiler_led_pin, GPIO.OUT)
 
     def system(self, status):
-        self.system_switch = status
+        self.system_status = status
         GPIO.output(self.system_led_pin, status)
+        GPIO.output(self.system_relay_pin, status)
 
     def boiler(self, status):
-        self.boiler_switch = status
+        self.boiler_status = status
         GPIO.output(self.boiler_led_pin, status)
+        GPIO.output(self.boiler_relay_pin, status)
 
     class Worker(threading.Thread):
         def __init__(self):

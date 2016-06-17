@@ -18,11 +18,11 @@ import logging
 import time
 
 from gaugette.rotary_encoder import RotaryEncoder
-from gaugette.switch import Switch
 from threading import Thread
 from libs.lcd_interface import lcd_interface
-from libs.sensors import Sensors
+from libs.sensor_ds1822 import Sensors
 from libs.heating_system import HeatingSystem
+from libs.toggle_switch import ToggleSwitch
 from screensavers.pacman_clock import Screensaver
 from data import custom_characters
 
@@ -36,11 +36,13 @@ SWITCH_PIN = 11
 ENCODER_PIN_A = 10
 ENCODER_PIN_B = 9
 
-HEATING_PIN = 17
-BOILER_PIN = 22
+TEMP_SENSOR_PIN = 4
 
-HEATING_RELAY = 14
-BOILER_RELAY = 15
+HEATING_LED_PIN = 25
+BOILER_LED_PIN = 8
+
+HEATING_RELAY_PIN = 23
+BOILER_RELAY_PIN = 24
 
 s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
@@ -49,20 +51,20 @@ s.bind((HOST,PORT))
 s.listen(BACKLOG)
 
 lcd = None
-switch = None
+toggle_switch = None
 encoder = None
 sensors = None
 heating = None
 standby = True
 
 def init(mock=False):
-    global lcd, switch, encoder, sensors, heating
+    global lcd, toggle_switch, encoder, sensors, heating
 
     lcd = lcd_interface(LCD_ADDRESS, mock)
     lcd.load_custom_chars(custom_characters.get_data())
     lcd.set_screensaver(Screensaver)
-    switch = Switch(SWITCH_PIN)
-    heating = HeatingSystem(HEATING_RELAY, BOILER_RELAY)
+    toggle_switch = ToggleSwitch(SWITCH_PIN)
+    heating = HeatingSystem(HEATING_RELAY_PIN, BOILER_RELAY_PIN, HEATING_LED_PIN, BOILER_LED_PIN)
     encoder = RotaryEncoder.Worker(ENCODER_PIN_A, ENCODER_PIN_B)
     encoder.start()
 
@@ -78,94 +80,71 @@ sensors_data = {
 }
 
 
-def main_loop():
+def main(args):
+    init(args.mock)
     desired = sensors_data['desired']
     dirty = True
     dirty_time = time.time()
     backlight_time = None
     last_state = False
     while True:
-        delta = encoder.get_delta()
-        if delta != 0:
-            encoder.reset_delta()
-            desired += 0.5 * delta
-            if desired < 17:
-                desired = 17
-            if desired > 30:
-                desired = 30
-            sensors_data['desired'] = desired
-            dirty = True
-
-        sw_state = switch.get_state()
-        if sw_state != last_state:
-            sensors_data['standby'] = not sensors_data['standby']
-            last_state = 0
-            dirty = True
-
-        sensors_data['temp'] = sensors.get_temperature()
-        sensors_data['humidity'] = sensors.get_humidity()
-
-        if dirty:
-            backlight_time = time.time()
-            lcd.backlight(1)
-        elif backlight_time and time.time() - backlight_time > 10:
-            backlight_time = None
-            lcd.backlight(0)
-           
-        if (time.time() - dirty_time) >= 0.1:
-            dirty = True
-            
-        if dirty:
-            ## Update heating system
-            if sensors_data['standby']:
-                heating.system(0)
-                heating.boiler(0)
-            else:
-                heating.system(1)
-                if sensors_data['desired'] > sensors_data['temp']:
-                    heating.boiler(1)
-                else:
-                    heating.boiler(0)
-
-            ## Update LCD
-            line1 = unichr(1) + " " + "{:.1f}%".format(sensors_data['humidity']) + "  " + unichr(0) + " " + "{:.1f}".format(sensors_data['temp']) + unichr(0b11011111)
-            if sensors_data['standby']:
-                line2 = '       {time}'
-            else:
-                line2 = unichr(4) + "   Target: " + "{:.1f}".format(sensors_data['desired']) + unichr(0b11011111)
-            lcd.display_string(line1, 1)
-            lcd.display_string(line2, 2)
-            dirty = False
-            dirt_time = time.time()
-
-def main(args):
-    init(args.mock)
-    main_loop()
-    """
-    while 1:
         try:
-            client, address = s.accept()
-            data = client.recv(SIZE)
-            while data or 0:
-                if data:
-                    parsed = lcd.parseCommand(data)
-                    if parsed and 'command' in parsed and parsed['command'] == 'quit':
-                        client.close()
-                data = client.recv(SIZE)
-            else:
-                client.close()
+            delta = encoder.get_delta()
+            if delta != 0:
+                encoder.reset_delta()
+                desired += 0.5 * delta
+                if desired < 17:
+                    desired = 17
+                if desired > 30:
+                    desired = 30
+                sensors_data['desired'] = desired
+                dirty = True
 
-        except (socket.error), e:
-            client.close()
-            print e.args, e.message
+            sw_state = toggle_switch.get_state()
+            dirty = sw_state != sensors_data['standby']
+            sensors_data['standby'] = sw_state
+
+            sensors_data['temp'] = sensors.get_temperature()
+            sensors_data['humidity'] = sensors.get_humidity()
+
+            if dirty:
+                backlight_time = time.time()
+                lcd.backlight(1)
+            elif backlight_time and time.time() - backlight_time > 10:
+                backlight_time = None
+                lcd.backlight(0)
+               
+            if (time.time() - dirty_time) >= 0.1:
+                dirty = True
+                
+            if dirty:
+                ## Update heating system
+                if sensors_data['standby']:
+                    heating.system(0)
+                    heating.boiler(0)
+                else:
+                    heating.system(1)
+                    if sensors_data['desired'] > sensors_data['temp']:
+                        heating.boiler(1)
+                    else:
+                        heating.boiler(0)
+
+                ## Update LCD
+                line1 = unichr(1) + " " + "{:.1f}%".format(sensors_data['humidity']) + "  " + unichr(0) + " " + "{:.1f}".format(sensors_data['temp']) + unichr(0b11011111)
+                if sensors_data['standby']:
+                    line2 = '       {time}'
+                else:
+                    line2 = unichr(4) + "   Target: " + "{:.1f}".format(sensors_data['desired']) + unichr(0b11011111)
+                lcd.display_string(line1, 1)
+                lcd.display_string(line2, 2)
+                dirty = False
+                dirt_time = time.time()
 
         except KeyboardInterrupt:
             lcd.backlight(0)
             print "GoodBye!"
             break
 
-        cmd = None
-    """
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('-m', '--mock', help='Uses a mock class for the lcd display (does not need a physical display)', action="store_true")
