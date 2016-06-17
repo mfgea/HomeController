@@ -135,7 +135,7 @@ def main(args):
             lcd.display_string(line1, 1)
             lcd.display_string(line2, 2)
 
-            time.sleep(.1)
+            time.sleep(.2)
 
         except KeyboardInterrupt:
             lcd.backlight(0)
