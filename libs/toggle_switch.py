@@ -10,7 +10,6 @@ class ToggleSwitch:
         GPIO.add_event_detect(self.pin, GPIO.RISING, callback=self.change_state, bouncetime=200)
 
     def change_state(self, param):
-        print "event detected", param
         self.state = not self.state
 
     def get_state(self):

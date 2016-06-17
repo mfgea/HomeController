@@ -31,7 +31,7 @@ class Sensors:
             self.stopping = False
             self.sensors = Sensors()
             self.daemon = True
-            self.interval = 5
+            self.interval = 60
 
         def run(self):
             while not self.stopping:

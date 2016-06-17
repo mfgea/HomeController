@@ -44,11 +44,11 @@ BOILER_LED_PIN = 8
 HEATING_RELAY_PIN = 23
 BOILER_RELAY_PIN = 24
 
-s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+#s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+#s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
 
-s.bind((HOST,PORT))
-s.listen(BACKLOG)
+#s.bind((HOST,PORT))
+#s.listen(BACKLOG)
 
 lcd = None
 toggle_switch = None
@@ -124,16 +124,18 @@ def main(args):
                     else:
                         heating.boiler(0)
 
-            ## Update LCD
-            line1  = unichr(1) + " " + "{:.1f}%".format(sensors_data['humidity'])
-            line1 += "  "
-            line1 += unichr(0) + " " + "{:.1f}".format(sensors_data['temp']) + unichr(0b11011111)
-            if sensors_data['standby']:
-                line2 = '       {time}'
-            else:
-                line2 = unichr(4) + "   Target: " + "{:.1f}".format(sensors_data['desired']) + unichr(0b11011111)
-            lcd.display_string(line1, 1)
-            lcd.display_string(line2, 2)
+                ## Update LCD
+                line1  = unichr(1) + " " + "{:.1f}%".format(sensors_data['humidity'])
+                line1 += "  "
+                line1 += unichr(0) + " " + "{:.1f}".format(sensors_data['temp']) + unichr(0b11011111)
+                if sensors_data['standby']:
+                    line2 = '       {time}'
+                else:
+                    line2 = unichr(4) + "   Target: " + "{:.1f}".format(sensors_data['desired']) + unichr(0b11011111)
+                lcd.display_string(line1, 1)
+                lcd.display_string(line2, 2)
+
+                dirty = False
 
             time.sleep(.2)
 
