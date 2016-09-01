@@ -19,12 +19,11 @@ import time
 
 from gaugette.rotary_encoder import RotaryEncoder
 from threading import Thread
-from user_interfaces.lcd_interface_ssd1306 import lcd_interface
 from libs.sensor_ds1822 import Sensors
 from libs.heating_system import HeatingSystem
 from libs.toggle_switch import ToggleSwitch
-from screensavers.image_screensaver import Screensaver
-from data import custom_characters
+
+from user_interfaces.oled_128x64.oled_interface import output_interface
 
 HOST = '127.0.0.1'
 PORT = 5055
@@ -33,6 +32,7 @@ SIZE = 1024
 
 ##LCD_ADDRESS = 0x27
 LCD_ADDRESS = 0x3C
+
 SWITCH_PIN = 11
 ENCODER_PIN_A = 10
 ENCODER_PIN_B = 9
@@ -51,7 +51,7 @@ BOILER_RELAY_PIN = 24
 #s.bind((HOST,PORT))
 #s.listen(BACKLOG)
 
-lcd = None
+interface = None
 toggle_switch = None
 encoder = None
 sensors = None
@@ -59,11 +59,9 @@ heating = None
 standby = True
 
 def init(mock=False):
-    global lcd, toggle_switch, encoder, sensors, heating
+    global interface, toggle_switch, encoder, sensors, heating
 
-    lcd = lcd_interface(LCD_ADDRESS, mock)
-    lcd.load_custom_chars(custom_characters.get_data())
-    lcd.set_screensaver(Screensaver)
+    interface = output_interface(LCD_ADDRESS, mock)
     toggle_switch = ToggleSwitch(SWITCH_PIN)
     heating = HeatingSystem(HEATING_RELAY_PIN, BOILER_RELAY_PIN, HEATING_LED_PIN, BOILER_LED_PIN)
     encoder = RotaryEncoder.Worker(ENCODER_PIN_A, ENCODER_PIN_B)
@@ -92,32 +90,40 @@ def main(args):
     backlight = True
     while True:
         try:
-            if not sensors_data['standby']:
-                delta = encoder.get_delta()
-                if delta != 0:
+            delta = encoder.get_delta()
+            if delta != 0 and sensors_data['standby'] == False:
+                if backlight:
                     desired += 0.5 * delta
                     sensors_data['desired'] = clip_int(desired, 17, 30)
-                    dirty = True
+                dirty = True
 
             sw_state = toggle_switch.get_state()
             if sw_state != sensors_data['standby']:
-                sensors_data['standby'] = sw_state
+                if backlight:
+                    sensors_data['standby'] = sw_state
                 dirty = True
 
-            sensors_data['temp'] = sensors.get_temperature()
-            sensors_data['humidity'] = sensors.get_humidity()
+            if sensors_data['temp'] != sensors.get_temperature():
+                if sensors_data['temp'] == 0.0:
+                    dirty = True
+                sensors_data['temp'] = sensors.get_temperature()
+
+            if sensors_data['humidity'] != sensors.get_humidity():
+                if sensors_data['humidity'] == 0.0:
+                    dirty = True
+                sensors_data['humidity'] = sensors.get_humidity()
 
             if dirty:
                 backlight_time = time.time()
                 if backlight == False:
-                    lcd.backlight(1)
+                    interface.turn_on()
                     backlight = True
                     dirty = False
-            elif backlight_time and time.time() - backlight_time > 10:
+            elif backlight_time and time.time() - backlight_time > 7:
                 backlight_time = None
                 backlight = False
-                lcd.backlight(0)
-               
+                interface.turn_off()
+
             if dirty:
                 ## Update heating system
                 if sensors_data['standby']:
@@ -130,14 +136,14 @@ def main(args):
                     else:
                         heating.boiler(0)
 
-                lcd.render(sensors_data)
+                interface.render(sensors_data)
 
                 dirty = False
 
             time.sleep(.1)
 
         except KeyboardInterrupt:
-            lcd.backlight(0)
+            interface.turn_off()
             print "GoodBye!"
             break
 

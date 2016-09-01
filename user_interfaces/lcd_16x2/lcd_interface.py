@@ -1,8 +1,11 @@
 import re
 from threading import Thread
 from time import strftime, localtime
+from data import custom_characters
 
-class lcd_interface():
+from screensavers.pacman_clock import Screensaver
+
+class output_interface():
     def __init__(self, address, mock=False):
         if(mock):
             from libs.i2c_lcd_driver_mock import i2c_lcd
@@ -10,6 +13,8 @@ class lcd_interface():
             from libs.i2c_lcd_driver import i2c_lcd
         self.__device = i2c_lcd(address)
         self.screensaver = None
+        self.load_custom_chars(custom_characters.get_data())
+        self.set_screensaver(Screensaver)
         self.clear()
     
     def render(self, data):
