@@ -19,7 +19,7 @@ import time
 
 from gaugette.rotary_encoder import RotaryEncoder
 from threading import Thread
-from libs.lcd_interface import lcd_interface
+from libs.lcd_interface_ssd1306 import lcd_interface
 from libs.sensor_ds1822 import Sensors
 from libs.heating_system import HeatingSystem
 from libs.toggle_switch import ToggleSwitch
@@ -31,7 +31,8 @@ PORT = 5055
 BACKLOG = 3
 SIZE = 1024
 
-LCD_ADDRESS = 0x27
+##LCD_ADDRESS = 0x27
+LCD_ADDRESS = 0x3C
 SWITCH_PIN = 11
 ENCODER_PIN_A = 10
 ENCODER_PIN_B = 9
