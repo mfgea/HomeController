@@ -101,6 +101,8 @@ def main(args):
             if sw_state != sensors_data['standby']:
                 if backlight:
                     sensors_data['standby'] = sw_state
+                else:
+                    toggle_switch.set_state(sensors_data['standby'])
                 dirty = True
 
             if sensors_data['temp'] != sensors.get_temperature():
