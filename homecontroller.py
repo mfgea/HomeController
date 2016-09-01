@@ -23,7 +23,7 @@ from libs.lcd_interface_ssd1306 import lcd_interface
 from libs.sensor_ds1822 import Sensors
 from libs.heating_system import HeatingSystem
 from libs.toggle_switch import ToggleSwitch
-from screensavers.pacman_clock import Screensaver
+from screensavers.image_screensaver import Screensaver
 from data import custom_characters
 
 HOST = '127.0.0.1'

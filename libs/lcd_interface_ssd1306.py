@@ -1,4 +1,4 @@
-import re
+import re, os
 from threading import Thread
 from oled.device import ssd1306, const
 from oled.render import canvas
@@ -9,13 +9,15 @@ class lcd_interface():
     def __init__(self, address, mock=False):
         self.__device = ssd1306(port=1, address=0x3C)
         self.__canvas = canvas(self.__device)
-        self.__font = ImageFont.load_default()
+        full_path = os.path.realpath(__file__)
+        dirname = os.path.dirname(full_path)
+        self.__font = ImageFont.truetype(dirname + '/../fonts/onesize.ttf', 14)
         self.screensaver = None
         self.clear()
 
     def set_screensaver(self, Screensaver):
-        #self.screensaver = Thread(target=Screensaver, args=(self,))
-        #self.screensaver.setDaemon(True)
+        self.screensaver = Thread(target=Screensaver, args=(self,))
+        self.screensaver.setDaemon(True)
         pass
 
     def clear(self):
@@ -35,18 +37,19 @@ class lcd_interface():
 
     def display_string(self, text, line=1, pos=0):
         text = text.replace("{time}", strftime( unichr(2) + "%H:%M:%S", localtime()))
-        y = (line - 1) * 20
+        y = (line - 1) * 16
         with self.__canvas as draw:
+            draw.rectangle((pos, y, self.__device.width-pos, y+16), outline=0, fill=0)
             draw.text((pos, y), text, font=self.__font, fill=255)
 
     def startScreensaver(self):
-        #if(self.screensaver):
-        #    self.screensaver.start()
+        if(self.screensaver):
+            self.screensaver.start()
         pass
 
     def stopScreensaver(self):
-        #if(self.screensaver):
-        #    self.screensaver.stop()
+        if(self.screensaver):
+            self.screensaver.stop()
         pass
 
     def parseCommand(self, data):
