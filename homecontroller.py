@@ -19,7 +19,7 @@ import time
 
 from gaugette.rotary_encoder import RotaryEncoder
 from threading import Thread
-from libs.lcd_interface_ssd1306 import lcd_interface
+from user_interfaces.lcd_interface_ssd1306 import lcd_interface
 from libs.sensor_ds1822 import Sensors
 from libs.heating_system import HeatingSystem
 from libs.toggle_switch import ToggleSwitch
@@ -89,6 +89,7 @@ def main(args):
     backlight_time = None
     last_state = False
     dirty = True
+    backlight = True
     while True:
         try:
             if not sensors_data['standby']:
@@ -108,9 +109,13 @@ def main(args):
 
             if dirty:
                 backlight_time = time.time()
-                lcd.backlight(1)
+                if backlight == False:
+                    lcd.backlight(1)
+                    backlight = True
+                    dirty = False
             elif backlight_time and time.time() - backlight_time > 10:
                 backlight_time = None
+                backlight = False
                 lcd.backlight(0)
                
             if dirty:
@@ -125,20 +130,11 @@ def main(args):
                     else:
                         heating.boiler(0)
 
-                ## Update LCD
-                line1  = unichr(1) + " " + "{:.1f}%".format(sensors_data['humidity'])
-                line1 += "  "
-                line1 += unichr(0) + " " + "{:.1f}".format(sensors_data['temp']) + unichr(0b11011111)
-                if sensors_data['standby']:
-                    line2 = '       {time}'
-                else:
-                    line2 = unichr(4) + "   Target: " + "{:.1f}".format(sensors_data['desired']) + unichr(0b11011111)
-                lcd.display_string(line1, 1)
-                lcd.display_string(line2, 2)
+                lcd.render(sensors_data)
 
                 dirty = False
 
-            time.sleep(.2)
+            time.sleep(.1)
 
         except KeyboardInterrupt:
             lcd.backlight(0)

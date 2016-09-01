@@ -5,12 +5,24 @@ from time import strftime, localtime
 class lcd_interface():
     def __init__(self, address, mock=False):
         if(mock):
-            from i2c_lcd_driver_mock import i2c_lcd
+            from libs.i2c_lcd_driver_mock import i2c_lcd
         else:
-            from i2c_lcd_driver import i2c_lcd
+            from libs.i2c_lcd_driver import i2c_lcd
         self.__device = i2c_lcd(address)
         self.screensaver = None
         self.clear()
+    
+    def render(self, data):
+        ## Update LCD
+        line1  = unichr(1) + " " + "{:.1f}%".format(data['humidity'])
+        line1 += "  "
+        line1 += unichr(0) + " " + "{:.1f}".format(data['temp']) + unichr(0b11011111)
+        if data['standby']:
+            line2 = '       {time}'
+        else:
+            line2 = unichr(4) + "   Target: " + "{:.1f}".format(data['desired']) + unichr(0b11011111)
+        self.display_string(line1, 1)
+        self.display_string(line2, 2)
 
     def set_screensaver(self, Screensaver):
         self.screensaver = Thread(target=Screensaver, args=(self,))
